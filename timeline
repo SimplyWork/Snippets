@@ -1,7 +1,7 @@
-    <script type="text/javascript">
-        const lang = navigator.language;
-		const locale = (lang && lang !== undefined) ? lang.match(/^\w{2}/)[0] : "en";
-			console.log(lang, locale);
+<script type="text/javascript">
+    const lang = navigator.language;
+    const locale = (lang && lang !== undefined) ? lang.match(/^\w{2}/)[0] : "en";
+    console.log(lang, locale);
 		var timelineHeight = Math.round($(window).height() * 0.85) + "px";
 
 		//var url = 'resources/data/wk2014.json';
