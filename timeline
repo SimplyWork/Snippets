@@ -1,0 +1,491 @@
+    <script type="text/javascript">
+        const lang = navigator.language;
+		const locale = (lang && lang !== undefined) ? lang.match(/^\w{2}/)[0] : "en";
+			console.log(lang, locale);
+		var timelineHeight = Math.round($(window).height() * 0.85) + "px";
+
+		//var url = 'resources/data/wk2014.json';
+		var items;
+		var products;
+		var groups;
+		var timeline;
+		// load data via an ajax request. When the data is in, load the timeline
+		$.ajax({
+			url: url,
+			success: function (data) {
+
+				//initTimeline(data);
+				// hide the "loading..." message
+				document.getElementById('loading').style.display = 'none';
+				var source = document.getElementById('item-template').innerHTML;
+				var template = Handlebars.compile(source);
+
+				var tipsource = document.getElementById('tooltip-template').innerHTML;
+				var tooltiptemplate = Handlebars.compile(tipsource);
+
+				var sidesource = document.getElementById('side-template').innerHTML;
+				var sidetemplate = Handlebars.compile(sidesource);
+
+				/*
+					var groups = new vis.DataSet([
+					{"content": "Gaming Headset", "id": "Gaming Headset", "value": 1, className:''},
+					{"content": "Gaming Keyboard", "id": "Gaming Keyboard", "value": 2, className:''},
+					{"content": "Mice", "id": "Mice", "value": 3, className:''},
+					]);
+				*/
+
+				groups = new vis.DataSet();
+
+					groups.add([{
+						content: "Gaming Headsets",
+						id: "Gaming Headsets",
+						value: 1,
+						nestedGroups: [11, 12, 13, 14],
+						className: ''
+					},
+					{
+						content: "Console Headsets",
+						id: "Console Headsets",
+						value: 2,
+						nestedGroups: [21, 22, 23, 24],
+						showNested: false,
+						className: ''
+					},
+					]);
+
+					groups.add([{
+						"content": "Price Range: $30 - $69",
+						"id": 11,
+						"value": "30-69",
+						className: ''
+					},
+					{
+						"content": "Price Range: $70 - $99",
+						"id": 12,
+						"value": "70-99",
+						className: ''
+					},
+					{
+						"content": "Price Range: $100 - $150",
+						"id": 13,
+						"value": "100-150",
+						className: ''
+					},
+					{
+						"content": "Price Range: $151 and up",
+						"id": 14,
+						"value": "151 +",
+						className: ''
+					},
+					]);
+
+					groups.add([{
+						"content": "Price Range: $30 - $69",
+						"id": 21,
+						"value": "30-69",
+						className: ''
+					},
+					{
+						"content": "Price Range: $70 - $99",
+						"id": 22,
+						"value": "70-99",
+						className: ''
+					},
+					{
+						"content": "Price Range: $100 - $150",
+						"id": 23,
+						"value": "100-150",
+						className: ''
+					},
+					{
+						"content": "Price Range: $151 and up",
+						"id": 24,
+						"value": "151 +",
+						className: ''
+					},
+					]);
+
+
+				// Configuration for the Timeline
+				var options = {
+					// local
+					locale: 'en',
+					width: "100%",
+					height: timelineHeight,
+					//minHeight: 800,
+					//maxHeight: 800,
+					groupHeightMode: 'fixed',
+					groupOrder: 'category',
+					stack: true,
+					min: new Date(2013, 0, 1),
+					// lower limit of visible range
+					max: new Date(2022, 0, 1),
+					// upper limit of visible range
+					start: new Date(2018, 0, 1),
+					// lower limit of visible range
+					end: new Date(2020, 0, 1),
+					// upper limit of visible range
+					zoomMin: 1000 * 60 * 60 * 24 * 31 * 12 * 2.5,
+					// thirty day in milliseconds
+					zoomMax: 1000 * 60 * 60 * 24 * 31 * 12 * 4,
+					// about one year in milliseconds
+					zoomFriction: 10,
+					showCurrentTime: true,
+					margin: {
+						item: 7, // minimal margin between items
+						axis: 25 // minimal margin between items and the axis
+					},
+					orientation: {
+						axis: "top",
+						item: "top"
+					},
+					groupEditable: true,
+					dataAttributes: 'all',
+					showTooltips: true,
+					tooltip: {
+						followMouse: true,
+						overflowMethod: 'flip',
+						delay: 10,
+						template: tooltiptemplate
+					},
+					align: "left",
+					// Available types: 'box' (default), 'point', 'range'
+					type: 'box',
+					selectable: true,
+					multiselect: true,
+					preferZoom: true,
+					cluster: {
+						titleTemplate: "Cluster containing {count} items. Zoom in to see the individual items.",
+						showStipes: true,
+						maxItems: 10
+					},
+					template: (itemData, element, data) => {
+						if(data.isCluster) {
+							var data_sp = '<span class = "cluster-header" > Cluster < /span><div>contains ' + data.products.length + 'products </div>';
+							return data_sp;
+						} else {
+							return template(data);
+						}
+					}
+				};
+
+				// Create a DataSet (allows two way data-binding)
+				items = data.products.records;
+				products = new vis.DataSet();
+				products.add(items);
+				
+				// create a Timeline
+				var container = document.getElementById('mytimeline');
+				timeline = new vis.Timeline(container);
+
+				timeline.setOptions(options);
+				timeline.setGroups(groups);
+				timeline.setItems(products);
+				timeline.fit();
+
+				var labelCurrentTime = document.createElement("label");
+				labelCurrentTime.setAttribute("id", "labelCurrentTime");
+				labelCurrentTime.innerHTML = new Date(timeline.getCurrentTime()).toLocaleDateString(lang, {
+					weekday: 'long',
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric'
+				});
+				labelCurrentTime.innerHTML = ' <span class="">' + labelCurrentTime.innerHTML + '</span>';
+				timeline.currentTime.bar.appendChild(labelCurrentTime);
+
+				//Set the zoomfit button
+				document.getElementById("globalView").onclick = function (e) {
+					timeline.fit(timeline.getVisibleItems());
+				};
+
+				// Select item(s)
+				timeline.on('select', function (props) {
+					// selected item/s ids given to you as an array on selection
+					var $event = $('[data-id=' + props.items[0] + ']');
+					var itemData = $event.data('productname');
+					console.log('selected items: ' + itemData);
+					if (itemData == null) {
+						closeObject();
+					} else {
+
+						$(".sidebar-content, .top-text").empty();
+						$('.back').show();
+						$(".sidebar").addClass("visible");
+						$(".sidebar-content").empty().show().scrollTop(0).append('<p>' + $event.data('productname') + '</p>' + '<em>' + $event.data('description') + '</em>');
+					}
+
+				});
+				
+				/**
+				 * Move the timeline a given percentage to left or right
+				 * @param {Number} percentage   For example 0.1 (left) or -0.1 (right)
+				 */
+				function move(percentage) {
+					var range = timeline.getWindow();
+					var interval = range.end - range.start;
+
+					timeline.setWindow({
+						start: range.start.valueOf() - interval * percentage,
+						end: range.end.valueOf() - interval * percentage
+					});
+				};
+				
+				function Reset(AllData) {
+					products.clear();
+					products.add(AllData);
+				};
+
+
+			//End of Success
+			},
+			error: function (err) {
+				//console.log('Error', err);
+				if (err.status === 0) {
+					alert('Failed to download data.json.\nTung fked up again.');
+				} else {
+					alert('Failed to display data.');
+				}
+			}
+		});
+		
+		var _loadData = function () {
+
+			var url = "";
+			var inputVal = document.getElementById("filterBrandInput").value;
+			var inputValArray = inputVal.split(',');
+			inputValArray = inputValArray.map(string => string.trim())
+			inputValArray = inputValArray.filter(Boolean);
+			products.clear();
+			if (inputValArray.length > 0) {
+
+				if (inputValArray.length == 1) {
+					//cs: contain string (string contains value)
+					//sw: start with (string starts with value)
+					//ew: end with (string end with value)
+					//eq: equal (string or number matches exactly)
+					//ne: not equal (string or number doen not match)
+					//lt: lower than (number is lower than value)
+					//le: lower or equal (number is lower than or equal to value)
+					//ge: greater or equal (number is higher than or equal to value)
+					//gt: greater than (number is higher than value)
+					//in: in (number is in comma seperated list of values)
+					
+					url = "http://hyperx.info/bin/api.php/products?filter=brand,cs," + inputValArray[0];
+					
+					$.get(url, function (AjaxReturn) {
+
+						products.add(AjaxReturn.products.records);
+					});
+				} else {
+					
+					url = "http://hyperx.info/bin/api.php/products?filter[]=brand,cs,";
+					for (var i = 0; i < inputValArray.length - 1; i++) {	
+						url = url + inputValArray[i] + "&filter[]=brand,cs,";
+					}
+					url = url + inputValArray[inputValArray.length-1] + "&satisfy=any";
+				
+					// get and deserialize the data
+					$.get(url, function (AjaxReturn) {
+
+						products.add(AjaxReturn.products.records);
+					});
+				}
+				
+				// adjust the timeline window such that we see the loaded data
+				timeline.fit();
+			} else {
+				url = "http://hyperx.info/bin/api.php/products";
+					
+					$.get(url, function (AjaxReturn) {
+
+						products.add(AjaxReturn.products.records);
+					});
+				timeline.fit();
+			}
+		};
+		
+		$("#filterBrand").click(function () {
+			_loadData();
+		});
+		
+		$("#filterBrandInput").on('keyup', function (e) {
+			if (e.keyCode === 13) {
+				_loadData();
+			}
+		});
+
+		function initTimeline(data) {
+			//console.log(data);
+			var result = {};
+
+			var type = _.toArray(_.groupBy(dataItems, 'products')).reverse(); // note: this set the order of witch the items are parsed
+			type.forEach(function (types, t) {
+				if (t == 0) { // type = ranges
+					types.forEach(function (type, i) {
+						result['range' + i] = type;
+						result['range' + i].items = JSON.stringify(type);
+					});
+				} else {
+					var group = _.toArray(_.groupBy(types, 'classID'));
+
+					group.forEach(function (items, i) {
+						items.forEach(function (item, j) {
+							var index = moment(item.start).format(formatByScale[scale]) + '-type' + item.classID;
+							if (monthsShows) {
+								index = item.id
+							};
+							if (!result[index]) {
+								result[index] = {
+									count: 0,
+									items: [],
+									start: item.start,
+									end: item.end,
+									title: item.title,
+									comment: item.comment,
+									type: item.type,
+									className: item.className,
+									classID: item.classID
+								};
+							}
+							result[index].items.push(JSON.stringify(item));
+							result[index].count++;
+						});
+					});
+				}
+			});
+			return _.toArray(result);
+		};
+		
+		function stringifyObject(object) {
+			if (!object) return;
+			var replacer = function (key, value) {
+				if (value && value.tagName) {
+					return "DOM Element";
+				} else {
+					return value;
+				}
+			};
+			return JSON.stringify(object, replacer);
+		};
+
+		function logEvent(event, properties) {
+			var log = document.getElementById('log');
+			var msg = document.createElement('div');
+			msg.innerHTML = 'event=' + JSON.stringify(event) + ', ' + 'properties=' + stringifyObject(properties);
+			log.firstChild ? log.insertBefore(msg, log.firstChild) : log.appendChild(msg);
+		};		
+		
+		//***************UNUSED********************
+		function listObjects(arrData) {
+
+			fY = arrData[0].start;
+			lY = arrData[arrData.length - 1].end;
+			if (fY != lY) {
+				$(".top-text").text(fY + ' - ' + lY);
+			} else {
+				$(".top-text").text(fY);
+			}
+
+			//$(".top-text").text(String(arrData[0].start).substring(0,4))
+			$.each(arrData, function (count, item) {
+				var textToInsert = $('<div class="list-item">' + '<div class="list-item-thumbnail">' + '</div><div class="list-item-body">' + '<h5>' + item.productname + '</h5>' + '</div>' + item.released + '</div>');
+				textToInsert.click(function () {
+					openObject(item, arrData);
+				});
+				$('.sidebar-content').append(textToInsert);
+			});
+		};
+		//***************UNUSED********************
+		function openObject(objData, arrItems) {
+			if (arrItems.length > 0) {
+				$('.back').click(function () {
+					$(".sidebar-content, .top-text").empty();
+					$('.back').hide();
+					listObjects(arrItems);
+				}).show();
+			}
+
+			fY = objData.start;
+			lY = objData.end;
+			if (fY != lY) {
+				$(".top-text").text(fY + ' - ' + lY);
+			} else {
+				$(".top-text").text(fY);
+			}
+
+			$(".sidebar-content").empty().scrollTop(0).append('<p>' + objData.productname + '</p>' + '<em>' + objData.description) + '</em>';
+		};
+
+		// Close sidebar
+		function closeObject() {
+			$(".sidebar").removeClass("visible");
+		};
+
+		
+
+		$("#clearG").click(function () {
+			clearGroups();
+		});
+		$("#setG").click(function () {
+			setGroups();
+		});
+
+		function clearGroups() {
+			timeline.setGroups(null);
+		};
+
+		function setGroups() {
+			timeline.setGroups(groups);
+		};
+
+		function toggleStacking() {
+
+			options.stack = !options.stack;
+			stackingStatus.innerHTML = options.stack.toString();
+			//console.log(options.stack.toString());
+			timeline.setOptions(options);
+		};
+
+		// attach events to the navigation buttons
+		//document.getElementById('zoomIn').onclick = function() {
+		//    timeline.zoomIn(0.5);
+		//};
+
+		
+
+
+		$(function () {
+
+			document.getElementById('zoomOut').onclick = function () {
+				timeline.zoomOut(0.5);
+			};
+
+			document.getElementById('moveLeft').onclick = function () {
+				move(0.2);
+			};
+
+			document.getElementById('moveRight').onclick = function () {
+				move(-0.2);
+			};
+
+			document.getElementById('close').onclick = function () {
+				$(".sidebar").removeClass("visible");
+			};
+			document.getElementById('globalView-i').innerHTML = "global view (fit)";
+			document.getElementById('globalView-i').title = "global view (fit)";
+
+			document.getElementById('filterBrand-i').innerHTML = "Filtering Brand";
+			document.getElementById('filterBrand-i').title = "Filtering Brand";
+
+			document.getElementById('zoomOut-i').innerHTML = "Zoom out";
+			document.getElementById('zoomOut-i').title = "gZoom out";
+
+			document.getElementById('moveLeft-i').innerHTML = "Move left";
+			document.getElementById('moveLeft-i').title = "Move left";
+
+			document.getElementById('moveRight-i').innerHTML = "Move right";
+			document.getElementById('moveRight-i').title = "Move right";
+
+		});
+    </script>
